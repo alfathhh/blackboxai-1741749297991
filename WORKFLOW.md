@@ -3,7 +3,7 @@
 ## 1. Inisialisasi Sistem
 - Sistem dimulai dari `index.js`
 - Menginisialisasi WhatsApp client dengan konfigurasi keamanan
-- Memuat semua layanan AI (Dialogflow, ChatGPT, Gemini)
+- Memuat semua layanan (Greetings, Dialogflow, ChatGPT, Gemini)
 - Mempersiapkan koneksi ke Google Sheets untuk logging
 
 ## 2. Proses Autentikasi WhatsApp
@@ -19,69 +19,99 @@ graph TD
     A[Pesan Masuk] --> B{Cek Queue}
     B -->|Sudah ada di queue| C[Kirim pesan tunggu]
     B -->|Belum ada di queue| D[Masukkan ke queue]
-    D --> E[Proses dengan Dialogflow]
-    E --> F{Confidence > 0.7?}
-    F -->|Ya| G[Gunakan jawaban Dialogflow]
-    F -->|Tidak| H[Coba ChatGPT]
-    H --> I{ChatGPT Berhasil?}
-    I -->|Ya| J[Gunakan jawaban ChatGPT]
-    I -->|Tidak| K[Gunakan Gemini]
-    G --> L[Tambahkan tag sumber]
-    J --> L
-    K --> L
-    L --> M[Kirim jawaban]
-    M --> N[Log ke Google Sheets]
-    N --> O[Hapus dari queue]
+    D --> E{Cek Greeting}
+    E -->|Ya| F[Kirim Balasan Greeting]
+    F --> G[Log ke Sheets]
+    G --> H[Hapus dari queue]
+    E -->|Tidak| I[Proses dengan Dialogflow]
+    I --> J{Confidence > 0.7?}
+    J -->|Ya| K[Gunakan jawaban Dialogflow]
+    J -->|Tidak| L[Coba ChatGPT]
+    L --> M{ChatGPT Berhasil?}
+    M -->|Ya| N[Gunakan jawaban ChatGPT]
+    M -->|Tidak| O[Gunakan Gemini]
+    K --> P[Tambahkan tag sumber]
+    N --> P
+    O --> P
+    P --> Q[Kirim jawaban]
+    Q --> R[Log ke Google Sheets]
+    R --> S[Hapus dari queue]
 ```
 
 ## 4. Detail Proses Per Layanan
 
-### a. Dialogflow
-- Menerima pesan user
+### a. Greetings Handler
+- Mendeteksi berbagai jenis salam:
+  * Salam Islam (Assalamu'alaikum)
+  * Sapaan umum (Halo, Hi, Hey)
+  * Sapaan waktu (Selamat pagi/siang/sore/malam)
+- Memberikan respons yang sesuai dengan:
+  * Waktu saat ini
+  * Jenis sapaan
+  * Emoji yang relevan
+- Response langsung tanpa perlu proses AI
+
+### b. Dialogflow
+- Menerima pesan non-greeting
 - Menganalisis intent (maksud) pesan
 - Jika confidence > 0.7, memberikan respons terstruktur
 - Response ditandai dengan "_jawaban digenerate oleh sistem_"
 
-### b. ChatGPT
+### c. ChatGPT
 - Digunakan jika Dialogflow tidak yakin dengan intent
 - Menggunakan model GPT untuk generasi teks
 - Memiliki sistem retry jika terjadi error
 - Response ditandai dengan "_jawaban digenerate oleh ChatGPT_"
 
-### c. Gemini
+### d. Gemini
 - Berfungsi sebagai fallback jika ChatGPT gagal
 - Menggunakan Google's Generative AI
 - Memiliki sistem retry sendiri
 - Response ditandai dengan "_jawaban digenerate oleh Gemini_"
 
-## 5. Sistem Logging
+## 5. Contoh Respons Greeting
+
+### Salam Islam
+- Input: "Assalamu'alaikum"
+- Response: "Wa'alaikumsalam Warahmatullahi Wabarakatuh 🙏"
+
+### Sapaan Waktu
+- Input: "Selamat pagi"
+- Response: "Selamat pagi juga! 🌅 Semoga hari Anda menyenangkan!"
+- (Emoji menyesuaikan waktu: 🌅 pagi, ☀️ siang, 🌤️ sore, 🌙 malam)
+
+### Sapaan Umum
+- Input: "Halo"
+- Response: "Halo! Selamat [waktu]! [emoji] Ada yang bisa saya bantu?"
+
+## 6. Sistem Logging
 Setiap percakapan dicatat ke Google Sheets dengan informasi:
 - Timestamp
 - ID Pengirim
 - Pesan User
 - Respons Bot
-- Sumber Respons (Dialogflow/ChatGPT/Gemini)
+- Sumber Respons (greeting/dialogflow/chatgpt/gemini)
 - Bahasa yang Digunakan
 
-## 6. Penanganan Error
+## 7. Penanganan Error
 - Setiap layanan memiliki error handling sendiri
 - Error dikategorikan berdasarkan sumbernya
 - User mendapat pesan error yang ramah
 - Error dilog dengan detail untuk debugging
 
-## 7. Sistem Antrian (Queue)
+## 8. Sistem Antrian (Queue)
 - Mencegah pemrosesan ganda untuk pengirim yang sama
 - Mengirim pesan "mohon tunggu" jika masih dalam proses
 - Menggunakan Map untuk tracking status pemrosesan
 - Membersihkan queue setelah selesai/error
 
-## 8. Fitur Tambahan
+## 9. Fitur Tambahan
 - Indikator mengetik saat memproses
 - Retry otomatis untuk API calls
 - Fallback bertingkat antar AI
 - Logging komprehensif untuk monitoring
 
-## 9. Konfigurasi yang Dibutuhkan (.env)
+## 10. Konfigurasi yang Dibutuhkan (.env)
 ```
 DIALOGFLOW_PROJECT_ID=your_project_id
 GOOGLE_APPLICATION_CREDENTIALS=path_to_credentials.json
