@@ -1,7 +1,7 @@
 /**
  * Message Handler Service
  * Central service for processing and managing WhatsApp messages
- * Coordinates between Dialogflow, ChatGPT, and logging services
+ * Coordinates between Dialogflow, ChatGPT, Gemini and logging services
  */
 const ErrorHandler = require('./error-handler');
 
@@ -11,19 +11,21 @@ class MessageHandler {
      * @param {Object} client - WhatsApp client instance
      * @param {Function} dialogflowService - Dialogflow service for intent detection
      * @param {Function} chatGPTService - ChatGPT service for AI responses
+     * @param {Function} geminiService - Gemini service for AI responses
      * @param {Function} sheetService - Google Sheets service for logging
      */
-    constructor(client, dialogflowService, chatGPTService, sheetService) {
+    constructor(client, dialogflowService, chatGPTService, geminiService, sheetService) {
         this.client = client;
         this.dialogflowService = dialogflowService;
         this.chatGPTService = chatGPTService;
+        this.geminiService = geminiService;
         this.sheetService = sheetService;
         this.messageQueue = new Map(); // Store pending messages to prevent overlap
     }
 
     /**
      * Handle incoming WhatsApp messages
-     * Processes messages through Dialogflow first, falls back to ChatGPT
+     * Processes messages through Dialogflow first, then tries ChatGPT, falls back to Gemini
      * @param {Object} message - WhatsApp message object
      */
     async handleMessage(message) {
@@ -56,11 +58,26 @@ class MessageHandler {
                 source = 'dialogflow';
                 language = dialogflowResponse.languageCode;
             } else {
-                // Fallback to ChatGPT for more complex queries
-                botResponse = await this.chatGPTService(userMessage);
-                finalResponse = `${botResponse}\n\n_jawaban digenerate oleh AI_`;
-                source = 'chatgpt';
-                language = 'id'; // Default to Indonesian
+                // Try ChatGPT first
+                try {
+                    botResponse = await this.chatGPTService(userMessage);
+                    if (botResponse && !botResponse.includes('Error')) {
+                        finalResponse = `${botResponse}\n\n_jawaban digenerate oleh ChatGPT_`;
+                        source = 'chatgpt';
+                    } else {
+                        // If ChatGPT fails, try Gemini
+                        botResponse = await this.geminiService(userMessage);
+                        finalResponse = `${botResponse}\n\n_jawaban digenerate oleh Gemini_`;
+                        source = 'gemini';
+                    }
+                    language = 'id'; // Default to Indonesian
+                } catch (error) {
+                    // If both AI services fail, use Gemini as final fallback
+                    botResponse = await this.geminiService(userMessage);
+                    finalResponse = `${botResponse}\n\n_jawaban digenerate oleh Gemini_`;
+                    source = 'gemini';
+                    language = 'id';
+                }
             }
 
             // Show typing indicator before sending response
