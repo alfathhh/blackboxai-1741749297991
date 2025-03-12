@@ -1,15 +1,33 @@
+/**
+ * ChatGPT service integration
+ * Handles communication with OpenAI's ChatGPT API
+ */
 const axios = require('axios');
 const ErrorHandler = require('./error-handler');
 
+/**
+ * ChatGPTService class
+ * Manages communication with ChatGPT API with retry mechanism
+ */
 class ChatGPTService {
+    /**
+     * Initialize ChatGPTService with configuration
+     * All parameters can be overridden via environment variables
+     */
     constructor() {
-        this.maxRetries = 3;
-        this.retryDelay = 1000; // 1 second
+        this.maxRetries = 3;                // Maximum number of retry attempts
+        this.retryDelay = 1000;            // Delay between retries in milliseconds
         this.model = process.env.OPENAI_MODEL || 'gpt-3.5-turbo';
         this.temperature = parseFloat(process.env.OPENAI_TEMPERATURE) || 0.7;
         this.maxTokens = parseInt(process.env.OPENAI_MAX_TOKENS) || 150;
     }
 
+    /**
+     * Retry mechanism for API calls
+     * @param {Function} fn - Async function to retry
+     * @param {number} retries - Number of retries remaining
+     * @returns {Promise} Result of the function call
+     */
     async retryWithDelay(fn, retries = this.maxRetries) {
         try {
             return await fn();
@@ -22,6 +40,11 @@ class ChatGPTService {
         }
     }
 
+    /**
+     * Determine if an error is retryable
+     * @param {Error} error - Error object to check
+     * @returns {boolean} True if the error is retryable
+     */
     isRetryableError(error) {
         // Retry on rate limits or temporary server errors
         return (
@@ -34,6 +57,11 @@ class ChatGPTService {
         );
     }
 
+    /**
+     * Generate response using ChatGPT
+     * @param {string} prompt - User's input message
+     * @returns {Promise<string>} ChatGPT's response or error message
+     */
     async generateResponse(prompt) {
         const makeRequest = async () => {
             const response = await axios.post('https://api.openai.com/v1/chat/completions', 
@@ -67,9 +95,14 @@ class ChatGPTService {
     }
 }
 
-// Create singleton instance
+// Create singleton instance for reuse
 const chatGPTService = new ChatGPTService();
 
+/**
+ * Get response from ChatGPT
+ * @param {string} prompt - User's input message
+ * @returns {Promise<string>} ChatGPT's response
+ */
 async function getChatGPTResponse(prompt) {
     return chatGPTService.generateResponse(prompt);
 }
