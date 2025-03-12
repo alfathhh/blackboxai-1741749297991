@@ -1,12 +1,13 @@
 /**
  * WhatsApp AI Chatbot Main Application
- * Integrates WhatsApp client with AI services (Dialogflow and ChatGPT)
+ * Integrates WhatsApp client with AI services (Dialogflow, ChatGPT, and Gemini)
  * for automated message responses and conversation logging
  */
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const { processDialogflowMessage } = require('./src/services/dialogflow');
 const { logConversation } = require('./src/services/sheets');
 const { getChatGPTResponse } = require('./src/services/chatgpt');
+const { getGeminiResponse } = require('./src/services/gemini');
 const MessageHandler = require('./src/services/message');
 const ErrorHandler = require('./src/services/error-handler');
 
@@ -39,6 +40,7 @@ const messageHandler = new MessageHandler(
     client,
     processDialogflowMessage,
     getChatGPTResponse,
+    getGeminiResponse,
     logConversation
 );
 
