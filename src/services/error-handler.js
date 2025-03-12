@@ -7,6 +7,7 @@ class ErrorHandler {
     static ERRORS = {
         DIALOGFLOW: 'DIALOGFLOW_ERROR',    // Dialogflow API related errors
         CHATGPT: 'CHATGPT_ERROR',         // ChatGPT API related errors
+        GEMINI: 'GEMINI_ERROR',           // Gemini API related errors
         SHEETS: 'SHEETS_ERROR',           // Google Sheets related errors
         WHATSAPP: 'WHATSAPP_ERROR'       // WhatsApp client related errors
     };
@@ -22,7 +23,9 @@ class ErrorHandler {
             case this.ERRORS.DIALOGFLOW:
                 return 'Maaf, sistem sedang mengalami gangguan. Silakan coba lagi nanti.';
             case this.ERRORS.CHATGPT:
-                return 'Maaf, AI sedang mengalami gangguan. Silakan coba lagi nanti.';
+                return 'Maaf, AI ChatGPT sedang mengalami gangguan. Silakan coba lagi nanti.';
+            case this.ERRORS.GEMINI:
+                return 'Maaf, AI Gemini sedang mengalami gangguan. Silakan coba lagi nanti.';
             case this.ERRORS.SHEETS:
                 return 'Terjadi kesalahan saat menyimpan percakapan.';
             case this.ERRORS.WHATSAPP:
