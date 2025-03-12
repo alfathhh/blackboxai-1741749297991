@@ -1,9 +1,10 @@
 /**
  * Message Handler Service
  * Central service for processing and managing WhatsApp messages
- * Coordinates between Dialogflow, ChatGPT, Gemini and logging services
+ * Coordinates between Greetings, Dialogflow, ChatGPT, Gemini and logging services
  */
 const ErrorHandler = require('./error-handler');
+const { greetingsService } = require('./greetings');
 
 class MessageHandler {
     /**
@@ -25,7 +26,7 @@ class MessageHandler {
 
     /**
      * Handle incoming WhatsApp messages
-     * Processes messages through Dialogflow first, then tries ChatGPT, falls back to Gemini
+     * First checks for greetings, then processes through AI services if needed
      * @param {Object} message - WhatsApp message object
      */
     async handleMessage(message) {
@@ -43,6 +44,22 @@ class MessageHandler {
         try {
             const userMessage = message.body;
 
+            // First check if it's a greeting
+            const greetingResponse = greetingsService.checkGreeting(userMessage);
+            if (greetingResponse) {
+                await this.client.sendMessage(sender, greetingResponse.response);
+                // Log greeting interaction
+                await this.sheetService(
+                    sender,
+                    userMessage,
+                    greetingResponse.response,
+                    'greeting',
+                    'id'
+                );
+                return;
+            }
+
+            // If not a greeting, proceed with AI services
             // First try Dialogflow for intent matching
             const dialogflowResponse = await this.dialogflowService(sender, userMessage);
             
